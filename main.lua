@@ -771,16 +771,186 @@ local Slider = Tab:CreateSlider({
    end,
 })
 
+local Tab = Window:CreateTab("AimBot", 0)
+
+local Camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+_G.SilentAimActive = false
+_G.SilentAimFovEnabled = true
+_G.SilentAimFovRadius = 150
+_G.SilentAimKey = Enum.UserInputType.MouseButton2 -- По умолчанию ПКМ
+
+local isAimKeyDown = false
+
+local FovCircle = Drawing.new("Circle")
+FovCircle.Thickness = 1.5
+FovCircle.Color = Color3.fromRGB(255, 0, 80)
+FovCircle.Filled = false
+FovCircle.Transparency = 0.8
+
+local function isVisibleThroughWalls(targetPart)
+    local localCharacter = LocalPlayer.Character
+    if not localCharacter then return false end
+    
+    local startPos = Camera.CFrame.Position
+    local direction = (targetPart.Position - startPos).Unit * (targetPart.Position - startPos).Magnitude
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {localCharacter, targetPart.Parent}
+    
+    local raycastResult = Workspace:Raycast(startPos, direction, raycastParams)
+    
+    if not raycastResult then
+        return true
+    end
+    return false
+end
+
+local function getClosestNPC()
+    local closestNPC = nil
+    local shortestDistance = math.huge
+    local scpsFolder = Workspace:FindFirstChild("scps")
+    local mousePos = UserInputService:GetMouseLocation()
+    
+    if scpsFolder and _G.SilentAimActive then
+        for _, child in pairs(scpsFolder:GetChildren()) do
+            if child:IsA("Model") then
+                local hum = child:FindFirstChildOfClass("Humanoid")
+                local targetPart = child:FindFirstChild("Head") or child:FindFirstChild("HumanoidRootPart") or child.PrimaryPart
+                
+                if targetPart and (not hum or hum.Health > 0) then
+                    local vector, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                    
+                    if onScreen then
+                        local screenDistance = (Vector2.new(vector.X, vector.Y) - mousePos).Magnitude
+                        
+                        if screenDistance <= _G.SilentAimFovRadius then
+                            if screenDistance < shortestDistance then
+                                if isVisibleThroughWalls(targetPart) then
+                                    closestNPC = targetPart
+                                    shortestDistance = screenDistance
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closestNPC
+end
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.UserInputType == _G.SilentAimKey or input.KeyCode == _G.SilentAimKey then
+        isAimKeyDown = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == _G.SilentAimKey or input.KeyCode == _G.SilentAimKey then
+        isAimKeyDown = false
+    end
+end)
+
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+setreadonly(mt, false)
+
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    
+    if tostring(method) == "FindPartOnRayWithIgnoreList" or tostring(method) == "FindPartOnRay" or tostring(method) == "Raycast" then
+        if _G.SilentAimActive and isAimKeyDown then
+            local target = getClosestNPC()
+            if target then
+                local origin = Camera.CFrame.Position
+                local direction = (target.Position - origin).Unit * 5000
+                return target, target.Position, target.CFrame.LookVector, target.Material
+            end
+        end
+    end
+    return oldNamecall(self, ...)
+end)
+setreadonly(mt, true)
+
+RunService.RenderStepped:Connect(function()
+    if _G.SilentAimActive and _G.SilentAimFovEnabled then
+        FovCircle.Position = UserInputService:GetMouseLocation()
+        FovCircle.Radius = _G.SilentAimFovRadius
+        FovCircle.Visible = true
+    else
+        FovCircle.Visible = false
+    end
+    
+    if _G.SilentAimActive and isAimKeyDown then
+        local target = getClosestNPC()
+        if target then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        end
+    end
+end)
+
+local ToggleAim = Tab:CreateToggle({
+   Name = "Silent Aim (NPC)",
+   CurrentValue = false,
+   Flag = "SilentAimToggle",
+   Callback = function(Value)
+       _G.SilentAimActive = Value
+   end,
+})
+
+local ToggleFov = Tab:CreateToggle({
+   Name = "Show FOV Circle",
+   CurrentValue = true,
+   Flag = "SilentAimFovToggle",
+   Callback = function(Value)
+       _G.SilentAimFovEnabled = Value
+   end,
+})
+
+local SliderFov = Tab:CreateSlider({
+   Name = "FOV Size",
+   Range = {30, 600},
+   Increment = 10,
+   Suffix = " px",
+   CurrentValue = 150,
+   Flag = "SilentAimFovSlider", 
+   Callback = function(Value)
+       _G.SilentAimFovRadius = Value
+   end,
+})
+
+local KeybindAim = Tab:CreateKeybind({
+   Name = "Aimbot Keybind",
+   CurrentValue = Enum.KeyCode.E,
+   Flag = "SilentAimKeybind",
+   Callback = function(Key)
+       _G.SilentAimKey = Key
+   end,
+})
+
 local Tab = Window:CreateTab("Destroy", 0)
 
 local DestroyButton = Tab:CreateButton({
    Name = "Unload Script",
    Callback = function()
+       _G.SilentAimActive = false
+       _G.SilentAimFovEnabled = false
+       _G.NpcAimbotActive = false
        _G.AllInfAmmoActive = false
        _G.NoDelayActive = false
        _G.InfRangeActive = false
        _G.NoRecoilAndSpread = false
-       _G.NpcEspActive = false
+       
+        _G.NpcEspActive = false
        _G.BerryEspActive = false
        _G.CrateEspActive = false
        _G.LongHorseEspActive = false
@@ -789,10 +959,15 @@ local DestroyButton = Tab:CreateButton({
        _G.PlayerEspActive = false
        _G.PlayerShowTracers = false
        
-       TargetSpeed = 16 
+        TargetSpeed = 16 
        TargetJump = 50  
        
        task.wait(0.1)
+       
+       if FovCircle then
+           FovCircle.Visible = false
+           FovCircle:Destroy()
+       end
        
        local function clearTable(t)
            for _, data in pairs(t) do
@@ -811,6 +986,5 @@ local DestroyButton = Tab:CreateButton({
        if playerDrawings then clearTable(playerDrawings) end
        
        Rayfield:Destroy()
-   end,
+   end
 })
-
