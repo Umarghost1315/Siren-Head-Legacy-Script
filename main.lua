@@ -890,19 +890,21 @@ local function checkAndCreateRealSirenESP(child)
     if child.Name:lower() == "real_siren" then
         if child:IsA("Model") then
             local mainPart = child.PrimaryPart or child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart")
-            if mainPart then 
+            if mainPart and not realSirenDrawings[mainPart] then 
                 realSirenDrawings[mainPart] = {
                     Text = Drawing.new("Text"), 
-                    Part = mainPart
+                    Part = mainPart,
+                    ParentModel = child
                 }
                 local t = realSirenDrawings[mainPart].Text
                 t.Visible = false; t.Size = 16; t.Center = true; t.Outline = true
                 t.Color = Color3.fromRGB(255, 0, 0)
             end
-        elseif child:IsA("BasePart") and not child.Parent:IsA("Model") then
+        elseif child:IsA("BasePart") and not child.Parent:IsA("Model") and not realSirenDrawings[child] then
             realSirenDrawings[child] = {
                 Text = Drawing.new("Text"), 
-                Part = child
+                Part = child,
+                ParentModel = child
             }
             local t = realSirenDrawings[child].Text
             t.Visible = false; t.Size = 16; t.Center = true; t.Outline = true
@@ -931,13 +933,13 @@ RunService.RenderStepped:Connect(function()
     local localHrp = localCharacter and localCharacter:FindFirstChild("HumanoidRootPart")
 
     for object, data in pairs(realSirenDrawings) do
-        if not object or not object:IsDescendantOf(Workspace) then
+        if not object or not data.ParentModel or not data.ParentModel:IsDescendantOf(Workspace) then
             removeRealSirenESP(object)
-        elseif localHrp then
-            local distance = (localHrp.Position - data.Part.Position).Magnitude
+        elseif localHrp and object:IsDescendantOf(Workspace) then
+            local distance = (localHrp.Position - object.Position).Magnitude
             
             if distance <= _G.RealSirenEspDistance then
-                local vector, onScreen = Camera:WorldToViewportPoint(data.Part.Position)
+                local vector, onScreen = Camera:WorldToViewportPoint(object.Position)
                 if onScreen then
                     data.Text.Position = Vector2.new(vector.X, vector.Y - 30)
                     data.Text.Text = string.format("🔊 SIREN HEAD [%dм]", distance)
@@ -953,6 +955,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
 
 local Toggle = Tab:CreateToggle({
    Name = "Real Siren ESP",
