@@ -988,11 +988,35 @@ local DestroyButton = Tab:CreateButton({
        _G.NoRecoilAndSpread = false
        _G.NpcEspActive = false
        _G.BerryEspActive = false
+       _G.CrateEspActive = false
+       _G.LongHorseEspActive = false
+       _G.CartoonCatEspActive = false
+       _G.RealSirenEspActive = false
+       _G.PlayerEspActive = false
+       _G.PlayerShowTracers = false
+       
        TargetSpeed = 16 
        TargetJump = 50  
        
        task.wait(0.1)
        
+       local function clearTable(t)
+           for _, data in pairs(t) do
+               if type(data) == "table" then
+                   if data.Text then data.Text:Destroy() end
+                   if data.Line then data.Line:Destroy() end
+               end
+           end
+       end
+       
+       if berryDrawings then clearTable(berryDrawings) end
+       if crateDrawings then clearTable(crateDrawings) end
+       if longHorseDrawings then clearTable(longHorseDrawings) end
+       if cartoonCatDrawings then clearTable(cartoonCatDrawings) end
+       if realSirenDrawings then clearTable(realSirenDrawings) end
+       if playerDrawings then clearTable(playerDrawings) end
+       
        Rayfield:Destroy()
    end,
 })
+
