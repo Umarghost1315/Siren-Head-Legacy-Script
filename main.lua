@@ -140,36 +140,33 @@ local Tab = Window:CreateTab("Gun", 0)
 
 local originalAmmo = {}
 
-local Toggle = Tab:CreateToggle({
-   Name = "InfAmmo",
+local originalAmmo = {}
+
+local ToggleAmmo = Tab:CreateToggle({
+   Name = "Inf Ammo",
    CurrentValue = false,
-   Flag = "AllWeaponsAmmoToggle",
+   Flag = "InfAmmoToggle",
    Callback = function(Value)
        _G.AllInfAmmoActive = Value
        
        if Value then
            task.spawn(function()
                while _G.AllInfAmmoActive do
-                   local Player = game.Players.LocalPlayer
-                   local Character = Player.Character
-                   local ActiveWeapon = Character and Character:FindFirstChildOfClass("Tool")
-                   
+                   local ActiveWeapon = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
                    if ActiveWeapon then
                        for _, child in pairs(ActiveWeapon:GetDescendants()) do
                            if child:IsA("IntValue") or child:IsA("NumberValue") then
                                local name = child.Name:lower()
-                               
-                               if name:find("mag") or name:find("ammo") then
-                                   
+                               if name == "ammo" or name == "mag" or name == "mag_size" then
                                    if not originalAmmo[child] then
                                        originalAmmo[child] = child.Value
                                    end
-                                   child.Value = 99 
+                                   child.Value = 999
                                end
                            end
                        end
                    end
-                   task.wait(0.1)
+                   task.wait(0.01)
                end
            end)
        else
@@ -182,6 +179,7 @@ local Toggle = Tab:CreateToggle({
        end
    end,
 })
+
 
 local originalDelays = {}
 
