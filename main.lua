@@ -762,89 +762,63 @@ local Slider = Tab:CreateSlider({
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
 _G.CartoonCatEspActive = false
 _G.CartoonCatEspDistance = 50
 
-local cartoonCatDrawings = {}
-
-local function removeCartoonCatESP(object)
-    if cartoonCatDrawings[object] then
-        if cartoonCatDrawings[object].Text then
-            cartoonCatDrawings[object].Text.Visible = false
-            cartoonCatDrawings[object].Text:Destroy()
-        end
-        cartoonCatDrawings[object] = nil
-    end
-end
-
-local function checkAndCreateCartoonCatESP(child)
-    if child.Name:lower() == "real_cartoon_cat" then
-        if child:IsA("Model") then
-            local mainPart = child.PrimaryPart or child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart")
-            if mainPart then 
-                cartoonCatDrawings[mainPart] = {
-                    Text = Drawing.new("Text"), 
-                    Part = mainPart
-                }
-                local t = cartoonCatDrawings[mainPart].Text
-                t.Visible = false; t.Size = 16; t.Center = true; t.Outline = true
-                t.Color = Color3.fromRGB(255, 0, 0)
-            end
-        elseif child:IsA("BasePart") and not child.Parent:IsA("Model") then
-            cartoonCatDrawings[child] = {
-                Text = Drawing.new("Text"), 
-                Part = child
-            }
-            local t = cartoonCatDrawings[child].Text
-            t.Visible = false; t.Size = 16; t.Center = true; t.Outline = true
-            t.Color = Color3.fromRGB(255, 0, 0)
-        end
-    end
-end
-
-for _, child in pairs(Workspace:GetDescendants()) do
-    checkAndCreateCartoonCatESP(child)
-end
-
-Workspace.DescendantAdded:Connect(function(child)
-    checkAndCreateCartoonCatESP(child)
-end)
+local catTexts = {}
 
 RunService.RenderStepped:Connect(function()
+    local localCharacter = LocalPlayer.Character
+    local localHrp = localCharacter and (localCharacter:FindFirstChild("HumanoidRootPart") or localCharacter.PrimaryPart)
+
     if not _G.CartoonCatEspActive then
-        for _, data in pairs(cartoonCatDrawings) do 
-            data.Text.Visible = false 
-        end
+        for textObj, _ in pairs(catTexts) do textObj.Visible = false end
         return
     end
 
-    local localCharacter = game.Players.LocalPlayer.Character
-    local localHrp = localCharacter and localCharacter:FindFirstChild("HumanoidRootPart")
+    local catIdx = 1
+    local catTextArray = {}
+    for t, _ in pairs(catTexts) do table.insert(catTextArray, t) end
 
-    for object, data in pairs(cartoonCatDrawings) do
-        if not object or not object:IsDescendantOf(Workspace) then
-            removeCartoonCatESP(object)
-        elseif localHrp then
-            local distance = (localHrp.Position - data.Part.Position).Magnitude
-            
-            if distance <= _G.CartoonCatEspDistance then
-                local vector, onScreen = Camera:WorldToViewportPoint(data.Part.Position)
-                if onScreen then
-                    data.Text.Position = Vector2.new(vector.X, vector.Y - 30)
-                    data.Text.Text = string.format("🚨 CARTOON CAT [%dм]", distance)
-                    data.Text.Visible = true
-                else
-                    data.Text.Visible = false
+    local scpsFolder = Workspace:FindFirstChild("scps")
+    if scpsFolder then
+        for _, child in pairs(scpsFolder:GetChildren()) do
+            if child:IsA("Model") and child.Name:lower() == "real_cartoon_cat" then
+                local part = child.PrimaryPart or child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart")
+                if part and localHrp then
+                    local distance = (localHrp.Position - part.Position).Magnitude
+                    if distance <= _G.CartoonCatEspDistance then
+                        local vector, onScreen = Camera:WorldToViewportPoint(part.Position)
+                        if onScreen then
+                            local textObj = catTextArray[catIdx]
+                            if not textObj then
+                                textObj = Drawing.new("Text")
+                                textObj.Size = 16
+                                textObj.Center = true
+                                textObj.Outline = true
+                                textObj.Color = Color3.fromRGB(255, 0, 0)
+                                catTexts[textObj] = true
+                            end
+                            
+                            textObj.Position = Vector2.new(vector.X, vector.Y - 30)
+                            textObj.Text = string.format("🚨 CARTOON CAT [%dм]", distance)
+                            textObj.Visible = true
+                            catIdx = catIdx + 1
+                        end
+                    end
                 end
-            else
-                data.Text.Visible = false
             end
-        else
-            data.Text.Visible = false
         end
     end
+
+    for i = catIdx, #catTextArray do
+        catTextArray[i].Visible = false
+    end
 end)
+
 
 local Toggle = Tab:CreateToggle({
    Name = "Cartoon Cat ESP",
@@ -870,89 +844,60 @@ local Slider = Tab:CreateSlider({
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
 _G.RealSirenEspActive = false
 _G.RealSirenEspDistance = 50
 
-local realSirenDrawings = {}
-
-local function removeRealSirenESP(object)
-    if realSirenDrawings[object] then
-        if realSirenDrawings[object].Text then
-            realSirenDrawings[object].Text.Visible = false
-            realSirenDrawings[object].Text:Destroy()
-        end
-        realSirenDrawings[object] = nil
-    end
-end
-
-local function checkAndCreateRealSirenESP(child)
-    if child.Name:lower() == "real_siren" then
-        if child:IsA("Model") then
-            local mainPart = child.PrimaryPart or child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart")
-            if mainPart and not realSirenDrawings[mainPart] then 
-                realSirenDrawings[mainPart] = {
-                    Text = Drawing.new("Text"), 
-                    Part = mainPart,
-                    ParentModel = child
-                }
-                local t = realSirenDrawings[mainPart].Text
-                t.Visible = false; t.Size = 16; t.Center = true; t.Outline = true
-                t.Color = Color3.fromRGB(255, 0, 0)
-            end
-        elseif child:IsA("BasePart") and not child.Parent:IsA("Model") and not realSirenDrawings[child] then
-            realSirenDrawings[child] = {
-                Text = Drawing.new("Text"), 
-                Part = child,
-                ParentModel = child
-            }
-            local t = realSirenDrawings[child].Text
-            t.Visible = false; t.Size = 16; t.Center = true; t.Outline = true
-            t.Color = Color3.fromRGB(255, 0, 0)
-        end
-    end
-end
-
-for _, child in pairs(Workspace:GetDescendants()) do
-    checkAndCreateRealSirenESP(child)
-end
-
-Workspace.DescendantAdded:Connect(function(child)
-    checkAndCreateRealSirenESP(child)
-end)
+local sirenTexts = {}
 
 RunService.RenderStepped:Connect(function()
+    local localCharacter = LocalPlayer.Character
+    local localHrp = localCharacter and (localCharacter:FindFirstChild("HumanoidRootPart") or localCharacter.PrimaryPart)
+
     if not _G.RealSirenEspActive then
-        for _, data in pairs(realSirenDrawings) do 
-            data.Text.Visible = false 
-        end
+        for textObj, _ in pairs(sirenTexts) do textObj.Visible = false end
         return
     end
 
-    local localCharacter = game.Players.LocalPlayer.Character
-    local localHrp = localCharacter and localCharacter:FindFirstChild("HumanoidRootPart")
+    local sirenIdx = 1
+    local sirenTextArray = {}
+    for t, _ in pairs(sirenTexts) do table.insert(sirenTextArray, t) end
 
-    for object, data in pairs(realSirenDrawings) do
-        if not object or not data.ParentModel or not data.ParentModel:IsDescendantOf(Workspace) then
-            removeRealSirenESP(object)
-        elseif localHrp and object:IsDescendantOf(Workspace) then
-            local distance = (localHrp.Position - object.Position).Magnitude
-            
-            if distance <= _G.RealSirenEspDistance then
-                local vector, onScreen = Camera:WorldToViewportPoint(object.Position)
-                if onScreen then
-                    data.Text.Position = Vector2.new(vector.X, vector.Y - 30)
-                    data.Text.Text = string.format("🔊 SIREN HEAD [%dм]", distance)
-                    data.Text.Visible = true
-                else
-                    data.Text.Visible = false
+    local scpsFolder = Workspace:FindFirstChild("scps")
+    if scpsFolder then
+        for _, child in pairs(scpsFolder:GetChildren()) do
+            if child:IsA("Model") and child.Name:lower() == "real_siren" then
+                local part = child.PrimaryPart or child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart")
+                if part and localHrp then
+                    local distance = (localHrp.Position - part.Position).Magnitude
+                    if distance <= _G.RealSirenEspDistance then
+                        local vector, onScreen = Camera:WorldToViewportPoint(part.Position)
+                        if onScreen then
+                            local textObj = sirenTextArray[sirenIdx]
+                            if not textObj then
+                                textObj = Drawing.new("Text")
+                                textObj.Size = 16
+                                textObj.Center = true
+                                textObj.Outline = true
+                                textObj.Color = Color3.fromRGB(255, 0, 0)
+                                sirenTexts[textObj] = true
+                            end
+                            
+                            textObj.Position = Vector2.new(vector.X, vector.Y - 30)
+                            textObj.Text = string.format("🔊 SIREN HEAD [%dм]", distance)
+                            textObj.Visible = true
+                            sirenIdx = sirenIdx + 1
+                        end
+                    end
                 end
-            else
-                data.Text.Visible = false
             end
-        else
-            data.Text.Visible = false
         end
+    end
+
+    for i = sirenIdx, #sirenTextArray do
+        sirenTextArray[i].Visible = false
     end
 end)
 
