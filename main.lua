@@ -784,9 +784,7 @@ _G.SilentAimActive = false
 _G.SilentAimFovEnabled = true
 _G.SilentAimFovRadius = 100
 _G.SilentAimKey = Enum.KeyCode.E
-_G.SilentAimSmoothness = 0.5
-
-local isAimKeyDown = false
+_G.SilentAimSmoothness = 1
 
 local FovCircle = Drawing.new("Circle")
 FovCircle.Thickness = 1.5
@@ -811,16 +809,19 @@ local function isVisibleThroughWalls(targetPart)
 end
 
 local function getClosestNPC()
-    if not _G.SilentAimActive then return nil end
-
     local closestNPC = nil
     local shortestDistance = math.huge
     local scpsFolder = Workspace:FindFirstChild("scps")
     local mousePos = UserInputService:GetMouseLocation()
     
     if scpsFolder then
-        for _, child in pairs(scpsFolder:GetChildren()) do
-            if child:IsA("Model") then
+        local targetNPCs = {
+            scpsFolder:FindFirstChild("real_siren"),
+            scpsFolder:FindFirstChild("real_cartoon_cat")
+        }
+        
+        for _, child in pairs(targetNPCs) do
+            if child and child:IsA("Model") then
                 local hum = child:FindFirstChildOfClass("Humanoid")
                 local targetPart = child:FindFirstChild("Head") or child:FindFirstChild("HumanoidRootPart") or child.PrimaryPart
                 
@@ -843,29 +844,20 @@ local function getClosestNPC()
     return closestNPC
 end
 
-local function checkInput(input, state)
+local function isAimKeyPressed()
     local targetKey = _G.SilentAimKey
-    if not targetKey then return end
-
+    if UserInputService:IsKeyDown(Enum.KeyCode.E) then 
+        return true 
+    end
     if typeof(targetKey) == "EnumItem" then
-        if input.KeyCode == targetKey or input.UserInputType == targetKey then
-            isAimKeyDown = state
-        end
-    elseif typeof(targetKey) == "string" then
-        if input.KeyCode.Name == targetKey or input.UserInputType.Name == targetKey or tostring(targetKey):find(input.KeyCode.Name) then
-            isAimKeyDown = state
+        if targetKey.ComponentType == Enum.UserInputType then
+            return UserInputService:IsMouseButtonPressed(targetKey)
+        else
+            return UserInputService:IsKeyDown(targetKey)
         end
     end
+    return false
 end
-
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    checkInput(input, true)
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    checkInput(input, false)
-end)
 
 RunService.RenderStepped:Connect(function()
     if _G.SilentAimActive and _G.SilentAimFovEnabled then
@@ -876,7 +868,7 @@ RunService.RenderStepped:Connect(function()
         FovCircle.Visible = false
     end
     
-    if _G.SilentAimActive and isAimKeyDown then
+    if _G.SilentAimActive and isAimKeyPressed() then
         local target = getClosestNPC()
         if target then
             local targetCFrame = CFrame.new(Camera.CFrame.Position, target.Position)
@@ -933,12 +925,11 @@ local SliderSmooth = Tab:CreateSlider({
 
 local KeybindAim = Tab:CreateKeybind({
    Name = "Aimbot Keybind",
-   CurrentKeybind = "E",
+   CurrentKeybind = Enum.KeyCode.E,
    HoldToTrigger = true,
    Flag = "SilentAimKeybind",
    Callback = function(Key)
        _G.SilentAimKey = Key
-       isAimKeyDown = false
    end,
 })
 
