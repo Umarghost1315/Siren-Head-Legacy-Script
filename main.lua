@@ -683,6 +683,8 @@ local Slider = Tab:CreateSlider({
    end,
 })
 
+local Tab = Window:CreateTab("AimBot", 0)
+
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -763,7 +765,7 @@ local Slider = Tab:CreateSlider({
    Name = "Real Siren Distance",
    Range = {50, 2000},
    Increment = 25,
-   Suffix = " Studs",
+   Suffix = "Studs",
    CurrentValue = 50,
    Flag = "RealSirenEspDistanceSlider", 
    Callback = function(Value)
@@ -780,11 +782,12 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
+-- Глобальные настройки
 _G.SilentAimActive = false
 _G.SilentAimFovEnabled = true
 _G.SilentAimFovRadius = 100
 _G.SilentAimKey = Enum.KeyCode.E
-_G.SilentAimSmoothness = 1
+_G.SilentAimSmoothness = 0.1
 
 local isAimKeyDown = false
 
@@ -793,13 +796,14 @@ FovCircle.Thickness = 1.5
 FovCircle.Color = Color3.fromRGB(255, 0, 80)
 FovCircle.Filled = false
 FovCircle.Transparency = 0.8
+FovCircle.Visible = false
 
 local function isVisibleThroughWalls(targetPart)
     local localCharacter = LocalPlayer.Character
     if not localCharacter then return false end
     
     local startPos = Camera.CFrame.Position
-    local direction = (targetPart.Position - startPos).Unit * (targetPart.Position - startPos).Magnitude
+    local direction = targetPart.Position - startPos
     
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -809,13 +813,16 @@ local function isVisibleThroughWalls(targetPart)
     return not raycastResult
 end
 
+-- Поиск ближайшего NPC в FOV
 local function getClosestNPC()
+    if not _G.SilentAimActive then return nil end
+
     local closestNPC = nil
     local shortestDistance = math.huge
     local scpsFolder = Workspace:FindFirstChild("scps")
     local mousePos = UserInputService:GetMouseLocation()
     
-    if scpsFolder and _G.SilentAimActive then
+    if scpsFolder then
         for _, child in pairs(scpsFolder:GetChildren()) do
             if child:IsA("Model") then
                 local hum = child:FindFirstChildOfClass("Humanoid")
@@ -840,32 +847,28 @@ local function getClosestNPC()
     return closestNPC
 end
 
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    
+local function checkInput(input, state)
     local targetKey = _G.SilentAimKey
-    if typeof(targetKey) == "string" then
-        if input.KeyCode.Name == targetKey or input.UserInputType.Name == targetKey then
-            isAimKeyDown = true
-        end
-    elseif typeof(targetKey) == "EnumItem" then
+    if not targetKey then return end
+
+    if typeof(targetKey) == "EnumItem" then
         if input.KeyCode == targetKey or input.UserInputType == targetKey then
-            isAimKeyDown = true
+            isAimKeyDown = state
+        end
+    elseif typeof(targetKey) == "string" then
+        if input.KeyCode.Name == targetKey or input.UserInputType.Name == targetKey then
+            isAimKeyDown = state
         end
     end
+end
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    checkInput(input, true)
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    local targetKey = _G.SilentAimKey
-    if typeof(targetKey) == "string" then
-        if input.KeyCode.Name == targetKey or input.UserInputType.Name == targetKey then
-            isAimKeyDown = false
-        end
-    elseif typeof(targetKey) == "EnumItem" then
-        if input.KeyCode == targetKey or input.UserInputType == targetKey then
-            isAimKeyDown = false
-        end
-    end
+    checkInput(input, false)
 end)
 
 RunService.RenderStepped:Connect(function()
@@ -890,52 +893,52 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-local Toggle = Tab:CreateToggle({
+local ToggleAim = Tab:CreateToggle({
    Name = "NPC Aimbot",
-   CurrentValue = false,
+   CurrentValue = _G.SilentAimActive,
    Flag = "SilentAimToggle",
    Callback = function(Value)
        _G.SilentAimActive = Value
    end,
 })
 
-local Toggle = Tab:CreateToggle({
+local ToggleFov = Tab:CreateToggle({
    Name = "Show FOV Circle",
-   CurrentValue = true,
+   CurrentValue = _G.SilentAimFovEnabled,
    Flag = "SilentAimFovToggle",
    Callback = function(Value)
        _G.SilentAimFovEnabled = Value
    end,
 })
 
-local Slider = Tab:CreateSlider({
+local SliderFov = Tab:CreateSlider({
    Name = "FOV Size",
    Range = {30, 600},
    Increment = 10,
-   Suffix = " px",
-   CurrentValue = 100,
+   Suffix = "px",
+   CurrentValue = _G.SilentAimFovRadius,
    Flag = "SilentAimFovSlider", 
    Callback = function(Value)
        _G.SilentAimFovRadius = Value
    end,
 })
 
-local Slider = Tab:CreateSlider({
+local SliderSmooth = Tab:CreateSlider({
    Name = "Aimbot Smoothness",
    Range = {1, 10},
    Increment = 1,
-   Suffix = "",
-   CurrentValue = 10,
+   Suffix = "%",
+   CurrentValue = 2,
    Flag = "SilentAimSmoothSlider", 
    Callback = function(Value)
-       _G.SilentAimSmoothness = Value / 10
+       _G.SilentAimSmoothness = Value / 20
    end,
 })
 
-local Keybind = Tab:CreateKeybind({
+local KeybindAim = Tab:CreateKeybind({
    Name = "Aimbot Keybind",
-   CurrentValue = "E",
-   HoldToInteract = false,
+   CurrentKeybind = "E",
+   HoldToTrigger = true,
    Flag = "SilentAimKeybind",
    Callback = function(Key)
        _G.SilentAimKey = Key
