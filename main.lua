@@ -782,7 +782,7 @@ local Workspace = game:GetService("Workspace")
 
 _G.SilentAimActive = false
 _G.SilentAimFovEnabled = true
-_G.SilentAimFovRadius = 150 
+_G.SilentAimFovRadius = 100
 _G.SilentAimKey = Enum.KeyCode.E
 _G.SilentAimSmoothness = 1
 
@@ -843,18 +843,26 @@ end
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
-    if input.KeyCode == _G.SilentAimKey or input.UserInputType == _G.SilentAimKey then
-        if _G.SilentAimKeyToggle then
-            toggledAim = not toggledAim
-        else
+    local targetKey = _G.SilentAimKey
+    if typeof(targetKey) == "string" then
+        if input.KeyCode.Name == targetKey or input.UserInputType.Name == targetKey then
+            isAimKeyDown = true
+        end
+    elseif typeof(targetKey) == "EnumItem" then
+        if input.KeyCode == targetKey or input.UserInputType == targetKey then
             isAimKeyDown = true
         end
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode == _G.SilentAimKey or input.UserInputType == _G.SilentAimKey then
-        if not _G.SilentAimKeyToggle then
+    local targetKey = _G.SilentAimKey
+    if typeof(targetKey) == "string" then
+        if input.KeyCode.Name == targetKey or input.UserInputType.Name == targetKey then
+            isAimKeyDown = false
+        end
+    elseif typeof(targetKey) == "EnumItem" then
+        if input.KeyCode == targetKey or input.UserInputType == targetKey then
             isAimKeyDown = false
         end
     end
@@ -869,8 +877,7 @@ RunService.RenderStepped:Connect(function()
         FovCircle.Visible = false
     end
     
-    local active = _G.SilentAimActive and (_G.SilentAimKeyToggle and toggledAim or not _G.SilentAimKeyToggle and isAimKeyDown)
-    if active then
+    if _G.SilentAimActive and isAimKeyDown then
         local target = getClosestNPC()
         if target then
             local targetCFrame = CFrame.new(Camera.CFrame.Position, target.Position)
@@ -889,7 +896,6 @@ local Toggle = Tab:CreateToggle({
    Flag = "SilentAimToggle",
    Callback = function(Value)
        _G.SilentAimActive = Value
-       toggledAim = false
    end,
 })
 
@@ -907,7 +913,7 @@ local Slider = Tab:CreateSlider({
    Range = {30, 600},
    Increment = 10,
    Suffix = " px",
-   CurrentValue = 150,
+   CurrentValue = 100,
    Flag = "SilentAimFovSlider", 
    Callback = function(Value)
        _G.SilentAimFovRadius = Value
@@ -928,7 +934,7 @@ local Slider = Tab:CreateSlider({
 
 local Keybind = Tab:CreateKeybind({
    Name = "Aimbot Keybind",
-   CurrentValue = Enum.KeyCode.E,
+   CurrentValue = "E",
    HoldToInteract = false,
    Flag = "SilentAimKeybind",
    Callback = function(Key)
