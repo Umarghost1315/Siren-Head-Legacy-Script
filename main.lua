@@ -787,7 +787,6 @@ _G.SilentAimKey = Enum.KeyCode.E
 _G.SilentAimSmoothness = 1
 
 local isAimKeyDown = false
-local toggledAim = false
 
 local FovCircle = Drawing.new("Circle")
 FovCircle.Thickness = 1.5
@@ -935,7 +934,6 @@ local Keybind = Tab:CreateKeybind({
    Callback = function(Key)
        _G.SilentAimKey = Key
        isAimKeyDown = false
-       toggledAim = false
    end,
 })
 
