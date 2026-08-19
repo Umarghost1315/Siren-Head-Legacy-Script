@@ -846,20 +846,26 @@ end
 
 local function isAimKeyPressed()
     local targetKey = _G.SilentAimKey
-    if UserInputService:IsKeyDown(Enum.KeyCode.E) then 
-        return true 
-    end
+    if not targetKey then return false end
+    
     if typeof(targetKey) == "EnumItem" then
         if targetKey.ComponentType == Enum.UserInputType then
             return UserInputService:IsMouseButtonPressed(targetKey)
         else
             return UserInputService:IsKeyDown(targetKey)
         end
+    elseif typeof(targetKey) == "string" then
+        local success, keyCodeEnum = pcall(function() return Enum.KeyCode[targetKey] end)
+        if success then return UserInputService:IsKeyDown(keyCodeEnum) end
+        
+        local success2, mouseEnum = pcall(function() return Enum.UserInputType[targetKey] end)
+        if success2 then return UserInputService:IsMouseButtonPressed(mouseEnum) end
     end
     return false
 end
 
-RunService.RenderStepped:Connect(function()
+local RenderConnection
+RenderConnection = RunService.RenderStepped:Connect(function()
     if _G.SilentAimActive and _G.SilentAimFovEnabled then
         FovCircle.Position = UserInputService:GetMouseLocation()
         FovCircle.Radius = _G.SilentAimFovRadius
@@ -925,7 +931,7 @@ local SliderSmooth = Tab:CreateSlider({
 
 local KeybindAim = Tab:CreateKeybind({
    Name = "Aimbot Keybind",
-   CurrentKeybind = Enum.KeyCode.E,
+   CurrentKeybind = "E",
    HoldToTrigger = true,
    Flag = "SilentAimKeybind",
    Callback = function(Key)
@@ -933,9 +939,9 @@ local KeybindAim = Tab:CreateKeybind({
    end,
 })
 
-local Tab = Window:CreateTab("Destroy", 0)
+local DestroyTab = Window:CreateTab("Destroy", 0)
 
-local Button = Tab:CreateButton({
+local Button = DestroyTab:CreateButton({
    Name = "Unload Script",
    Callback = function()
        _G.SilentAimActive = false
@@ -946,7 +952,7 @@ local Button = Tab:CreateButton({
        _G.InfRangeActive = false
        _G.NoRecoilAndSpread = false
        
-        _G.NpcEspActive = false
+       _G.NpcEspActive = false
        _G.BerryEspActive = false
        _G.CrateEspActive = false
        _G.LongHorseEspActive = false
@@ -955,8 +961,12 @@ local Button = Tab:CreateButton({
        _G.PlayerEspActive = false
        _G.PlayerShowTracers = false
        
-        TargetSpeed = 16 
+       TargetSpeed = 16 
        TargetJump = 50  
+       
+       if RenderConnection then
+           RenderConnection:Disconnect()
+       end
        
        task.wait(0.1)
        
@@ -966,20 +976,21 @@ local Button = Tab:CreateButton({
        end
        
        local function clearTable(t)
+           if not t then return end
            for _, data in pairs(t) do
                if type(data) == "table" then
-                   if data.Text then data.Text:Destroy() end
-                   if data.Line then data.Line:Destroy() end
+                   if data.Text and data.Text.Destroy then pcall(function() data.Text:Destroy() end) end
+                   if data.Line and data.Line.Destroy then pcall(function() data.Line:Destroy() end) end
                end
            end
        end
        
-       if berryDrawings then clearTable(berryDrawings) end
-       if crateDrawings then clearTable(crateDrawings) end
-       if longHorseDrawings then clearTable(longHorseDrawings) end
-       if cartoonCatDrawings then clearTable(cartoonCatDrawings) end
-       if realSirenDrawings then clearTable(realSirenDrawings) end
-       if playerDrawings then clearTable(playerDrawings) end
+       clearTable(berryDrawings)
+       clearTable(crateDrawings)
+       clearTable(longHorseDrawings)
+       clearTable(cartoonCatDrawings)
+       clearTable(realSirenDrawings)
+       clearTable(playerDrawings)
        
        Rayfield:Destroy()
    end
