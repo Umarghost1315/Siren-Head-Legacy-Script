@@ -683,8 +683,6 @@ local Slider = Tab:CreateSlider({
    end,
 })
 
-local Tab = Window:CreateTab("AimBot", 0)
-
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -782,12 +780,11 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
--- Глобальные настройки
 _G.SilentAimActive = false
 _G.SilentAimFovEnabled = true
 _G.SilentAimFovRadius = 100
 _G.SilentAimKey = Enum.KeyCode.E
-_G.SilentAimSmoothness = 0.1
+_G.SilentAimSmoothness = 0.5
 
 local isAimKeyDown = false
 
@@ -813,7 +810,6 @@ local function isVisibleThroughWalls(targetPart)
     return not raycastResult
 end
 
--- Поиск ближайшего NPC в FOV
 local function getClosestNPC()
     if not _G.SilentAimActive then return nil end
 
@@ -856,7 +852,7 @@ local function checkInput(input, state)
             isAimKeyDown = state
         end
     elseif typeof(targetKey) == "string" then
-        if input.KeyCode.Name == targetKey or input.UserInputType.Name == targetKey then
+        if input.KeyCode.Name == targetKey or input.UserInputType.Name == targetKey or tostring(targetKey):find(input.KeyCode.Name) then
             isAimKeyDown = state
         end
     end
@@ -927,11 +923,11 @@ local SliderSmooth = Tab:CreateSlider({
    Name = "Aimbot Smoothness",
    Range = {1, 10},
    Increment = 1,
-   Suffix = "%",
-   CurrentValue = 2,
+   Suffix = "",
+   CurrentValue = 10,
    Flag = "SilentAimSmoothSlider", 
    Callback = function(Value)
-       _G.SilentAimSmoothness = Value / 20
+       _G.SilentAimSmoothness = Value / 10
    end,
 })
 
