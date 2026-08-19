@@ -782,7 +782,7 @@ local Workspace = game:GetService("Workspace")
 
 _G.SilentAimActive = false
 _G.SilentAimFovEnabled = true
-_G.SilentAimFovRadius = 100
+_G.SilentAimFovRadius = 150
 _G.SilentAimKeyToggle = false 
 _G.SilentAimKey = Enum.KeyCode.E
 _G.SilentAimSmoothness = 1
@@ -909,7 +909,7 @@ local Slider = Tab:CreateSlider({
    Range = {30, 600},
    Increment = 10,
    Suffix = " px",
-   CurrentValue = 100,
+   CurrentValue = 150,
    Flag = "SilentAimFovSlider", 
    Callback = function(Value)
        _G.SilentAimFovRadius = Value
@@ -953,7 +953,7 @@ local Keybind = Tab:CreateKeybind({
 
 local Tab = Window:CreateTab("Destroy", 0)
 
-local DestroyButton = Tab:CreateButton({
+local Button = Tab:CreateButton({
    Name = "Unload Script",
    Callback = function()
        _G.SilentAimActive = false
