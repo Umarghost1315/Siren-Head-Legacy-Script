@@ -785,6 +785,7 @@ _G.SilentAimFovEnabled = true
 _G.SilentAimFovRadius = 100
 _G.SilentAimKeyToggle = false 
 _G.SilentAimKey = Enum.KeyCode.E
+_G.SilentAimSmoothness = 1
 
 local isAimKeyDown = false
 local toggledAim = false
@@ -874,7 +875,12 @@ RunService.RenderStepped:Connect(function()
     if active then
         local target = getClosestNPC()
         if target then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+            local targetCFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+            if _G.SilentAimSmoothness >= 1 then
+                Camera.CFrame = targetCFrame
+            else
+                Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, _G.SilentAimSmoothness)
+            end
         end
     end
 end)
@@ -907,6 +913,18 @@ local Slider = Tab:CreateSlider({
    Flag = "SilentAimFovSlider", 
    Callback = function(Value)
        _G.SilentAimFovRadius = Value
+   end,
+})
+
+local Slider = Tab:CreateSlider({
+   Name = "Aimbot Smoothness",
+   Range = {1, 10},
+   Increment = 1,
+   Suffix = "",
+   CurrentValue = 10,
+   Flag = "SilentAimSmoothSlider", 
+   Callback = function(Value)
+       _G.SilentAimSmoothness = Value / 10
    end,
 })
 
