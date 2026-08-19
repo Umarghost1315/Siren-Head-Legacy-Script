@@ -782,8 +782,7 @@ local Workspace = game:GetService("Workspace")
 
 _G.SilentAimActive = false
 _G.SilentAimFovEnabled = true
-_G.SilentAimFovRadius = 150
-_G.SilentAimKeyToggle = false 
+_G.SilentAimFovRadius = 150 
 _G.SilentAimKey = Enum.KeyCode.E
 _G.SilentAimSmoothness = 1
 
@@ -925,17 +924,6 @@ local Slider = Tab:CreateSlider({
    Flag = "SilentAimSmoothSlider", 
    Callback = function(Value)
        _G.SilentAimSmoothness = Value / 10
-   end,
-})
-
-local Toggle = Tab:CreateToggle({
-   Name = "Toggle Key Mode (On/Off)",
-   CurrentValue = false,
-   Flag = "SilentAimKeyToggleFlag",
-   Callback = function(Value)
-       _G.SilentAimKeyToggle = Value
-       isAimKeyDown = false
-       toggledAim = false
    end,
 })
 
