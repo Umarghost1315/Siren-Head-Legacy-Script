@@ -82,60 +82,6 @@ task.spawn(function()
    end
 end)
 
-
-local BlinkDistance = 5
-
-Tab:CreateSlider({
-   Name = "Blink",
-   Range = {1, 10},
-   Increment = 1,
-   Suffix = "studs",
-   CurrentValue = 5,
-   Flag = "BlinkDistanceSlider", 
-   Callback = function(Value)
-       BlinkDistance = Value
-   end,
-})
-
-Tab:CreateKeybind({
-   Name = "Teleport key",
-   CurrentKeybind = "E", 
-   HoldToInteract = false,
-   Flag = "BlinkKeybind", 
-   Callback = function()
-       local Player = game.Players.LocalPlayer
-       local Character = Player.Character
-       local Root = Character and Character:FindFirstChild("HumanoidRootPart")
-       
-       if Root then
-           Root.CFrame = Root.CFrame * CFrame.new(0, 0, -BlinkDistance)
-       end
-   end,
-})
-
-Tab:CreateKeybind({
-   Name = "Physical surge (Bypass)",
-   CurrentKeybind = "E",
-   HoldToInteract = false,
-   Flag = "BlinkVelocityKeybind", 
-   Callback = function()
-       local Player = game.Players.LocalPlayer
-       local Character = Player.Character
-       local Root = Character and Character:FindFirstChild("HumanoidRootPart")
-       
-       if Root then
-           local Velocity = Instance.new("BodyVelocity")
-           Velocity.MaxForce = Vector3.new(math.huge, 0, math.huge)
-           
-           Velocity.Velocity = Root.CFrame.LookVector * (BlinkDistance * 15) 
-           Velocity.Parent = Root
-           
-           task.wait(0.1)
-           Velocity:Destroy()
-       end
-   end,
-})
-
 local Tab = Window:CreateTab("Gun", 0)
 
 local originalAmmo = {}
@@ -180,7 +126,6 @@ local ToggleAmmo = Tab:CreateToggle({
    end,
 })
 
-
 local originalDelays = {}
 
 local Toggle = Tab:CreateToggle({
@@ -222,7 +167,6 @@ local Toggle = Tab:CreateToggle({
    end,
 })
 
-
 local originalRanges = {}
 
 local Toggle = Tab:CreateToggle({
@@ -262,7 +206,6 @@ local Toggle = Tab:CreateToggle({
        end
    end,
 })
-
 
 local originalRecoilAndSpread = {}
 
@@ -308,7 +251,6 @@ Tab:CreateToggle({
        end
    end,
 })
-
 
 local Tab = Window:CreateTab("Esp", 0)
 
@@ -433,7 +375,6 @@ local Slider = Tab:CreateSlider({
        _G.PlayerEspDistance = Value
    end,
 })
-
 
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
@@ -654,119 +595,11 @@ local Slider = Tab:CreateSlider({
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-
-_G.LongHorseEspActive = false
-_G.LongHorseEspDistance = 50
-
-local longHorseDrawings = {}
-
-local function removeLongHorseESP(object)
-    if longHorseDrawings[object] then
-        if longHorseDrawings[object].Text then
-            longHorseDrawings[object].Text.Visible = false
-            longHorseDrawings[object].Text:Destroy()
-        end
-        longHorseDrawings[object] = nil
-    end
-end
-
-local function checkAndCreateLongHorseESP(child)
-    if child.Name:lower() == "long_horse" then
-        if child:IsA("Model") then
-            local mainPart = child.PrimaryPart or child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart")
-            if mainPart then 
-                longHorseDrawings[mainPart] = {
-                    Text = Drawing.new("Text"), 
-                    Part = mainPart
-                }
-                local t = longHorseDrawings[mainPart].Text
-                t.Visible = false; t.Size = 16; t.Center = true; t.Outline = true
-                t.Color = Color3.fromRGB(255, 0, 0)
-            end
-        elseif child:IsA("BasePart") and not child.Parent:IsA("Model") then
-            longHorseDrawings[child] = {
-                Text = Drawing.new("Text"), 
-                Part = child
-            }
-            local t = longHorseDrawings[child].Text
-            t.Visible = false; t.Size = 16; t.Center = true; t.Outline = true
-            t.Color = Color3.fromRGB(255, 0, 0)
-        end
-    end
-end
-
-for _, child in pairs(Workspace:GetDescendants()) do
-    checkAndCreateLongHorseESP(child)
-end
-
-Workspace.DescendantAdded:Connect(function(child)
-    checkAndCreateLongHorseESP(child)
-end)
-
-RunService.RenderStepped:Connect(function()
-    if not _G.LongHorseEspActive then
-        for _, data in pairs(longHorseDrawings) do 
-            data.Text.Visible = false 
-        end
-        return
-    end
-
-    local localCharacter = game.Players.LocalPlayer.Character
-    local localHrp = localCharacter and localCharacter:FindFirstChild("HumanoidRootPart")
-
-    for object, data in pairs(longHorseDrawings) do
-        if not object or not object:IsDescendantOf(Workspace) then
-            removeLongHorseESP(object)
-        elseif localHrp then
-            local distance = (localHrp.Position - data.Part.Position).Magnitude
-            
-            if distance <= _G.LongHorseEspDistance then
-                local vector, onScreen = Camera:WorldToViewportPoint(data.Part.Position)
-                if onScreen then
-                    data.Text.Position = Vector2.new(vector.X, vector.Y - 30)
-                    data.Text.Text = string.format("⚠️ LONG HORSE [%dм]", distance)
-                    data.Text.Visible = true
-                else
-                    data.Text.Visible = false
-                end
-            else
-                data.Text.Visible = false
-            end
-        else
-            data.Text.Visible = false
-        end
-    end
-end)
-
-local Toggle = Tab:CreateToggle({
-   Name = "Long Horse ESP",
-   CurrentValue = false,
-   Flag = "LongHorseEspToggle",
-   Callback = function(Value)
-       _G.LongHorseEspActive = Value
-   end,
-})
-
-local Slider = Tab:CreateSlider({
-   Name = "Long Horse Distance",
-   Range = {50, 2000},
-   Increment = 25,
-   Suffix = " Studs",
-   CurrentValue = 50,
-   Flag = "LongHorseEspDistanceSlider", 
-   Callback = function(Value)
-       _G.LongHorseEspDistance = Value
-   end,
-})
-
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 _G.CartoonCatEspActive = false
-_G.CartoonCatEspDistance = 50
+_G.CartoonCatEspDistance = 1000
 
 local catTexts = {}
 
@@ -788,6 +621,8 @@ RunService.RenderStepped:Connect(function()
         for _, child in pairs(scpsFolder:GetChildren()) do
             if child:IsA("Model") and child.Name:lower() == "real_cartoon_cat" then
                 local part = child.PrimaryPart or child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart")
+                local hum = child:FindFirstChildOfClass("Humanoid")
+                
                 if part and localHrp then
                     local distance = (localHrp.Position - part.Position).Magnitude
                     if distance <= _G.CartoonCatEspDistance then
@@ -803,8 +638,13 @@ RunService.RenderStepped:Connect(function()
                                 catTexts[textObj] = true
                             end
                             
+                           local hpText = ""
+                            if hum then
+                                hpText = string.format(" [HP: %d/%d]", math.floor(hum.Health), math.floor(hum.MaxHealth))
+                            end
+
                             textObj.Position = Vector2.new(vector.X, vector.Y - 30)
-                            textObj.Text = string.format("🚨 CARTOON CAT [%dм]", distance)
+                            textObj.Text = string.format("🚨 CARTOON CAT [%dм]%s", distance, hpText)
                             textObj.Visible = true
                             catIdx = catIdx + 1
                         end
@@ -818,7 +658,6 @@ RunService.RenderStepped:Connect(function()
         catTextArray[i].Visible = false
     end
 end)
-
 
 local Toggle = Tab:CreateToggle({
    Name = "Cartoon Cat ESP",
@@ -870,6 +709,8 @@ RunService.RenderStepped:Connect(function()
         for _, child in pairs(scpsFolder:GetChildren()) do
             if child:IsA("Model") and child.Name:lower() == "real_siren" then
                 local part = child.PrimaryPart or child:FindFirstChild("HumanoidRootPart") or child:FindFirstChildWhichIsA("BasePart")
+                local hum = child:FindFirstChildOfClass("Humanoid")
+                
                 if part and localHrp then
                     local distance = (localHrp.Position - part.Position).Magnitude
                     if distance <= _G.RealSirenEspDistance then
@@ -885,8 +726,13 @@ RunService.RenderStepped:Connect(function()
                                 sirenTexts[textObj] = true
                             end
                             
+                            local hpText = ""
+                            if hum then
+                                hpText = string.format(" [HP: %d/%d]", math.floor(hum.Health), math.floor(hum.MaxHealth))
+                            end
+
                             textObj.Position = Vector2.new(vector.X, vector.Y - 30)
-                            textObj.Text = string.format("🔊 SIREN HEAD [%dм]", distance)
+                            textObj.Text = string.format("🔊 SIREN HEAD [%dм]%s", distance, hpText)
                             textObj.Visible = true
                             sirenIdx = sirenIdx + 1
                         end
@@ -900,7 +746,6 @@ RunService.RenderStepped:Connect(function()
         sirenTextArray[i].Visible = false
     end
 end)
-
 
 local Toggle = Tab:CreateToggle({
    Name = "Real Siren ESP",
