@@ -783,7 +783,7 @@ local Workspace = game:GetService("Workspace")
 _G.SilentAimActive = false
 _G.SilentAimFovEnabled = true
 _G.SilentAimFovRadius = 150
-_G.SilentAimKey = Enum.UserInputType.MouseButton2 -- По умолчанию ПКМ
+_G.SilentAimKey = "E"
 
 local isAimKeyDown = false
 
@@ -805,11 +805,7 @@ local function isVisibleThroughWalls(targetPart)
     raycastParams.FilterDescendantsInstances = {localCharacter, targetPart.Parent}
     
     local raycastResult = Workspace:Raycast(startPos, direction, raycastParams)
-    
-    if not raycastResult then
-        return true
-    end
-    return false
+    return not raycastResult
 end
 
 local function getClosestNPC()
@@ -829,13 +825,10 @@ local function getClosestNPC()
                     
                     if onScreen then
                         local screenDistance = (Vector2.new(vector.X, vector.Y) - mousePos).Magnitude
-                        
-                        if screenDistance <= _G.SilentAimFovRadius then
-                            if screenDistance < shortestDistance then
-                                if isVisibleThroughWalls(targetPart) then
-                                    closestNPC = targetPart
-                                    shortestDistance = screenDistance
-                                end
+                        if screenDistance <= _G.SilentAimFovRadius and screenDistance < shortestDistance then
+                            if isVisibleThroughWalls(targetPart) then
+                                closestNPC = targetPart
+                                shortestDistance = screenDistance
                             end
                         end
                     end
@@ -848,38 +841,16 @@ end
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-    if input.UserInputType == _G.SilentAimKey or input.KeyCode == _G.SilentAimKey then
+    if input.KeyCode.Name == _G.SilentAimKey or input.UserInputType.Name == _G.SilentAimKey then
         isAimKeyDown = true
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == _G.SilentAimKey or input.KeyCode == _G.SilentAimKey then
+    if input.KeyCode.Name == _G.SilentAimKey or input.UserInputType.Name == _G.SilentAimKey then
         isAimKeyDown = false
     end
 end)
-
-local mt = getrawmetatable(game)
-local oldNamecall = mt.__namecall
-setreadonly(mt, false)
-
-mt.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-    
-    if tostring(method) == "FindPartOnRayWithIgnoreList" or tostring(method) == "FindPartOnRay" or tostring(method) == "Raycast" then
-        if _G.SilentAimActive and isAimKeyDown then
-            local target = getClosestNPC()
-            if target then
-                local origin = Camera.CFrame.Position
-                local direction = (target.Position - origin).Unit * 5000
-                return target, target.Position, target.CFrame.LookVector, target.Material
-            end
-        end
-    end
-    return oldNamecall(self, ...)
-end)
-setreadonly(mt, true)
 
 RunService.RenderStepped:Connect(function()
     if _G.SilentAimActive and _G.SilentAimFovEnabled then
@@ -899,7 +870,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local ToggleAim = Tab:CreateToggle({
-   Name = "Silent Aim (NPC)",
+   Name = "NPC Aimbot",
    CurrentValue = false,
    Flag = "SilentAimToggle",
    Callback = function(Value)
@@ -930,10 +901,11 @@ local SliderFov = Tab:CreateSlider({
 
 local KeybindAim = Tab:CreateKeybind({
    Name = "Aimbot Keybind",
-   CurrentValue = Enum.KeyCode.E,
+   CurrentValue = "E",
+   HoldToInteract = false,
    Flag = "SilentAimKeybind",
    Callback = function(Key)
-       _G.SilentAimKey = Key
+       _G.SilentAimKey = tostring(Key)
    end,
 })
 
