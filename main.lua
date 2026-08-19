@@ -316,6 +316,129 @@ local Tab = Window:CreateTab("Esp", 0)
 
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+_G.PlayerEspActive = false
+_G.PlayerEspDistance = 50
+_G.PlayerShowTracers = true
+
+local playerDrawings = {}
+
+local function removePlayerESP(player)
+    if playerDrawings[player] then
+        local data = playerDrawings[player]
+        if data.Text then data.Text.Visible = false; data.Text:Destroy() end
+        if data.Line then data.Line.Visible = false; data.Line:Destroy() end
+        playerDrawings[player] = nil
+    end
+end
+
+local function createPlayerESP(player)
+    if player == LocalPlayer or playerDrawings[player] then return end
+
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Size = 14
+    text.Center = true
+    text.Outline = true
+    text.Color = Color3.fromRGB(0, 255, 255)
+
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Thickness = 1.5
+    line.Color = Color3.fromRGB(0, 255, 255)
+
+    playerDrawings[player] = {Text = text, Line = line}
+end
+
+for _, p in pairs(Players:GetPlayers()) do createPlayerESP(p) end
+Players.PlayerAdded:Connect(createPlayerESP)
+Players.PlayerRemoving:Connect(removePlayerESP)
+
+RunService.RenderStepped:Connect(function()
+    if not _G.PlayerEspActive then
+        for _, data in pairs(playerDrawings) do 
+            data.Text.Visible = false
+            data.Line.Visible = false
+        end
+        return
+    end
+
+    local localCharacter = LocalPlayer.Character
+    local localHrp = localCharacter and localCharacter:FindFirstChild("HumanoidRootPart")
+
+    for player, data in pairs(playerDrawings) do
+        local character = player.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        local hum = character and character:FindFirstChildOfClass("Humanoid")
+
+        if not hrp or not hum or hum.Health <= 0 then
+            data.Text.Visible = false
+            data.Line.Visible = false
+        elseif localHrp then
+            local distance = (localHrp.Position - hrp.Position).Magnitude
+
+            if distance <= _G.PlayerEspDistance then
+                local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                
+                if onScreen then
+                    data.Text.Position = Vector2.new(vector.X, vector.Y - 30)
+                    data.Text.Text = string.format("👤 %s [%dм]", player.Name, distance)
+                    data.Text.Visible = true
+
+                    if _G.PlayerShowTracers then
+                        data.Line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                        data.Line.To = Vector2.new(vector.X, vector.Y)
+                        data.Line.Visible = true
+                    else
+                        data.Line.Visible = false
+                    end
+                else
+                    data.Text.Visible = false
+                    data.Line.Visible = false
+                end
+            else
+                data.Text.Visible = false
+                data.Line.Visible = false
+            end
+        end
+    end
+end)
+
+local ToggleESP = Tab:CreateToggle({
+   Name = "Players ESP",
+   CurrentValue = false,
+   Flag = "PlayerEspToggle",
+   Callback = function(Value)
+       _G.PlayerEspActive = Value
+   end,
+})
+
+local ToggleTracers = Tab:CreateToggle({
+   Name = "Show Tracers",
+   CurrentValue = true,
+   Flag = "PlayerTracersToggle",
+   Callback = function(Value)
+       _G.PlayerShowTracers = Value
+   end,
+})
+
+local Slider = Tab:CreateSlider({
+   Name = "ESP Distance",
+   Range = {50, 2000},
+   Increment = 25,
+   Suffix = " Studs",
+   CurrentValue = 50,
+   Flag = "PlayerEspDistanceSlider", 
+   Callback = function(Value)
+       _G.PlayerEspDistance = Value
+   end,
+})
+
+
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 _G.BerryEspActive = false
