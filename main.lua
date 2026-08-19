@@ -323,8 +323,11 @@ RunService.RenderStepped:Connect(function()
                 local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
                 
                 if onScreen then
+                    -- Формируем строку со здоровьем игрока
+                    local hpText = string.format(" [HP: %d/%d]", math.floor(hum.Health), math.floor(hum.MaxHealth))
+                    
                     data.Text.Position = Vector2.new(vector.X, vector.Y - 30)
-                    data.Text.Text = string.format("👤 %s [%dм]", player.Name, distance)
+                    data.Text.Text = string.format("👤 %s [%dм]%s", player.Name, distance, hpText)
                     data.Text.Visible = true
 
                     if _G.PlayerShowTracers then
