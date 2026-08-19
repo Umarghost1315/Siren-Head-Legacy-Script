@@ -793,7 +793,7 @@ FovCircle.Filled = false
 FovCircle.Transparency = 0.8
 FovCircle.Visible = false
 
-local function isVisibleThroughWalls(targetPart)
+local function isVisibleThroughWalls(targetPart, npcModel)
     local localCharacter = LocalPlayer.Character
     if not localCharacter then return false end
     
@@ -802,7 +802,7 @@ local function isVisibleThroughWalls(targetPart)
     
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-    raycastParams.FilterDescendantsInstances = {localCharacter, targetPart.Parent}
+    raycastParams.FilterDescendantsInstances = {localCharacter, npcModel}
     
     local raycastResult = Workspace:Raycast(startPos, direction, raycastParams)
     return not raycastResult
@@ -823,7 +823,7 @@ local function getClosestNPC()
         for _, child in pairs(targetNPCs) do
             if child and child:IsA("Model") then
                 local hum = child:FindFirstChildOfClass("Humanoid")
-                local targetPart = child:FindFirstChild("Head") or child:FindFirstChild("HumanoidRootPart") or child.PrimaryPart
+                local targetPart = child:FindFirstChild("Head") or child:FindFirstChild("HumanoidRootPart") or child.PrimaryPart or child:FindFirstChildWhichIsA("BasePart")
                 
                 if targetPart and (not hum or hum.Health > 0) then
                     local vector, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
@@ -831,7 +831,7 @@ local function getClosestNPC()
                     if onScreen then
                         local screenDistance = (Vector2.new(vector.X, vector.Y) - mousePos).Magnitude
                         if screenDistance <= _G.SilentAimFovRadius and screenDistance < shortestDistance then
-                            if isVisibleThroughWalls(targetPart) then
+                            if isVisibleThroughWalls(targetPart, child) then
                                 closestNPC = targetPart
                                 shortestDistance = screenDistance
                             end
@@ -864,8 +864,7 @@ local function isAimKeyPressed()
     return false
 end
 
-local RenderConnection
-RenderConnection = RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function()
     if _G.SilentAimActive and _G.SilentAimFovEnabled then
         FovCircle.Position = UserInputService:GetMouseLocation()
         FovCircle.Radius = _G.SilentAimFovRadius
