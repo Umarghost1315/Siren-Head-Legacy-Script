@@ -783,7 +783,7 @@ local Workspace = game:GetService("Workspace")
 _G.SilentAimActive = false
 _G.SilentAimFovEnabled = true
 _G.SilentAimFovRadius = 150
-_G.SilentAimKey = "E"
+_G.SilentAimKey = Enum.KeyCode.E
 
 local isAimKeyDown = false
 
@@ -841,13 +841,13 @@ end
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-    if input.KeyCode.Name == _G.SilentAimKey or input.UserInputType.Name == _G.SilentAimKey then
+    if input.KeyCode == _G.SilentAimKey or input.UserInputType == _G.SilentAimKey then
         isAimKeyDown = true
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode.Name == _G.SilentAimKey or input.UserInputType.Name == _G.SilentAimKey then
+    if input.KeyCode == _G.SilentAimKey or input.UserInputType == _G.SilentAimKey then
         isAimKeyDown = false
     end
 end)
@@ -901,11 +901,11 @@ local SliderFov = Tab:CreateSlider({
 
 local KeybindAim = Tab:CreateKeybind({
    Name = "Aimbot Keybind",
-   CurrentValue = "E",
+   CurrentValue = Enum.KeyCode.E,
    HoldToInteract = false,
    Flag = "SilentAimKeybind",
    Callback = function(Key)
-       _G.SilentAimKey = tostring(Key)
+       _G.SilentAimKey = Key
    end,
 })
 
